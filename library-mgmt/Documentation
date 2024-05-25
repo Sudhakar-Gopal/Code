@@ -1,0 +1,10 @@
+Postgre SQL is used here for DB. Since Postgres is fully ACID compliant and able to handle large volume of transactions. Also can handle simultaneous borrow and return without conflicts
+
+I have use Global Exception Handler as AOP Advice inorder separte exception handling from business logic
+
+Assumptions 
+
+1) If book is already borrowed, then cannot borrow same book
+2) Book with same Isbn, must have same author, title
+3) If book is not borrowed, then return of the book is considered invalid
+4) While return, borrower ID should match with the one already tagged under the book

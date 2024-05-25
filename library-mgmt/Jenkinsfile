@@ -1,0 +1,48 @@
+pipeline
+{
+	agent any
+		stages	{
+			 stage('Build')
+			 	{
+			 		steps
+			 			{	
+			 				sh 'mvn clean package'
+			 			}
+			 	}
+			 stage('Test')
+			 	{
+			 		steps
+			 			{
+			 				sh 'mvn test'
+			 	}
+			 stage('Docker Build')
+			 	{	
+			 		steps
+			 			{
+			 				scripts
+			 					{	
+			 					docker.build(library-management:latest)
+			 					}
+			 			}
+			 	}
+			 	stage('Deploy to Kubernetes')
+			 	{
+			 		steps
+			 			{
+			 			}
+			 	}
+			}
+		
+		post
+		{
+			success
+				{
+					echo "build and deploy successfull"
+				}
+			failure
+				{
+					echo "problem occured"
+				}
+		}
+		
+	}				
