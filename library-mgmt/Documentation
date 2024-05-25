@@ -1,6 +1,7 @@
 Postgre SQL is used here for DB. Since Postgres is fully ACID compliant and able to handle large volume of transactions. Also can handle simultaneous borrow and return without conflicts
+I have used Global Exception Handler as AOP Advice inorder separte exception handling from business logic
+I have used Swagger UI for API documentation
 
-I have use Global Exception Handler as AOP Advice inorder separte exception handling from business logic
 
 Assumptions 
 
@@ -8,3 +9,10 @@ Assumptions
 2) Book with same Isbn, must have same author, title
 3) If book is not borrowed, then return of the book is considered invalid
 4) While return, borrower ID should match with the one already tagged under the book
+The API performs necessary validations such as ensuring the borrower exists, the book exists, the book is not already borrowed when attempting to borrow, and the book is borrowed by the same borrower when returning.
+Error Handling:
+
+Proper error responses are provided for cases such as:
+Borrower or book not found.
+Attempt to borrow a book that is already borrowed.
+Attempt to return a book that is not borrowed by the borrower.
