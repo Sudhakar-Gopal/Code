@@ -27,7 +27,7 @@
         </select>
     </div>
     
-    <div id="jsGrid"></div>
+    <div id="jsGrid" style="display: none;"></div>
     <button id="submitData">Submit</button>
 
     <script>
@@ -44,6 +44,7 @@
                     $("#environmentDropdown").hide();
                 }
                 dmlType = selectedDmlType;
+                $("#jsGrid").show(); // Show jsGrid after selecting DML type
             });
 
             $("#jsGrid").jsGrid({
