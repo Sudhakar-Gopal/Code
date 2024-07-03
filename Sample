@@ -28,7 +28,7 @@
     </div>
     
     <div id="jsGrid" style="display: none;"></div>
-    <button id="submitData">Submit</button>
+    <button id="submitData" style="display: none;">Submit</button>
 
     <script>
         $(function() {
@@ -45,6 +45,7 @@
                 }
                 dmlType = selectedDmlType;
                 $("#jsGrid").show(); // Show jsGrid after selecting DML type
+                checkSubmitButtonVisibility(); // Check visibility of submit button
             });
 
             $("#jsGrid").jsGrid({
@@ -72,8 +73,21 @@
                     { name: "dataValue", type: "text", title: "Data Value", width: 100, validate: "required" },
                     { name: "description", type: "text", width: 200, validate: "required" },
                     { type: "control" }
-                ]
+                ],
+
+                onRefreshed: function(args) {
+                    checkSubmitButtonVisibility(); // Check visibility of submit button after grid refresh
+                }
             });
+
+            function checkSubmitButtonVisibility() {
+                var data = $("#jsGrid").jsGrid("option", "data");
+                if (data.length > 0) {
+                    $("#submitData").show();
+                } else {
+                    $("#submitData").hide();
+                }
+            }
 
             $("#submitData").click(function() {
                 var data = $("#jsGrid").jsGrid("option", "data");
