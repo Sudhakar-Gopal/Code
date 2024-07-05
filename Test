@@ -1,0 +1,67 @@
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class SysparmService {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    public void saveSysparmData(SysparmRequest request) {
+        List<Sysparm> sysparmList = request.getSysparmList();
+
+        if ("exception".equalsIgnoreCase(request.getDmlType())) {
+            executeQueriesForException(sysparmList);
+        } else {
+            executeQueriesForBaseAndOverride(sysparmList, request.getDmlType());
+        }
+    }
+
+    private void executeQueriesForException(List<Sysparm> sysparmList) {
+        sysparmList.forEach(sysparm -> {
+            String insertQuery = String.format("INSERT INTO SYSPARM (GROUPREFID, CATEGORY, KEY_ID, SEQ_NUM, DATA_VALUE, DESCRIPTION, ENVIRONMENT) " +
+                            "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');",
+                    sysparm.getGROUPREFID(), sysparm.getCATEGORY(), sysparm.getKEY_ID(), sysparm.getSEQ_NUM(), sysparm.getDATA_VALUE(), sysparm.getDESCRIPTION(), sysparm.getENVIRONMENT());
+
+            String backoutQuery = String.format("DELETE FROM SYSPARM WHERE GROUPREFID = '%s' AND CATEGORY = '%s' AND KEY_ID = '%s' AND SEQ_NUM = '%s' AND ENVIRONMENT = '%s';",
+                    sysparm.getGROUPREFID(), sysparm.getCATEGORY(), sysparm.getKEY_ID(), sysparm.getSEQ_NUM(), sysparm.getENVIRONMENT());
+
+            String selectQuery = String.format("SELECT * FROM SYSPARM WHERE GROUPREFID = '%s' AND CATEGORY = '%s' AND KEY_ID = '%s' AND SEQ_NUM = '%s' AND ENVIRONMENT = '%s';",
+                    sysparm.getGROUPREFID(), sysparm.getCATEGORY(), sysparm.getKEY_ID(), sysparm.getSEQ_NUM(), sysparm.getENVIRONMENT());
+
+            jdbcTemplate.execute(insertQuery);
+            // You can store backoutQuery and selectQuery if needed
+        });
+    }
+
+    private void executeQueriesForBaseAndOverride(List<Sysparm> sysparmList, String dmlType) {
+        sysparmList.forEach(sysparm -> {
+            String tableName = "base".equalsIgnoreCase(dmlType) ? "SYSPARM" : "SYSPARM_OVERRIDE";
+            String insertQuery = String.format("INSERT INTO %s (GROUPREFID, CATEGORY, KEY_ID, SEQ_NUM, DATA_VALUE, DESCRIPTION) " +
+                            "VALUES ('%s', '%s', '%s', '%s', '%s', '%s');",
+                    tableName, sysparm.getGROUPREFID(), sysparm.getCATEGORY(), sysparm.getKEY_ID(), sysparm.getSEQ_NUM(), sysparm.getDATA_VALUE(), sysparm.getDESCRIPTION());
+
+            String backoutQuery = String.format("DELETE FROM %s WHERE GROUPREFID = '%s' AND CATEGORY = '%s' AND KEY_ID = '%s' AND SEQ_NUM = '%s';",
+                    tableName, sysparm.getGROUPREFID(), sysparm.getCATEGORY(), sysparm.getKEY_ID(), sysparm.getSEQ_NUM());
+
+            String selectQuery = String.format("SELECT * FROM %s WHERE GROUPREFID = '%s' AND CATEGORY = '%s' AND KEY_ID = '%s' AND SEQ_NUM = '%s';",
+                    tableName, sysparm.getGROUPREFID(), sysparm.getCATEGORY(), sysparm.getKEY_ID(), sysparm.getSEQ_NUM());
+
+            // Execute in dev schema
+            jdbcTemplate.execute("USE dev;");
+            jdbcTemplate.execute(insertQuery);
+
+            if ("base".equalsIgnoreCase(dmlType)) {
+                // Execute in base schema for 'base' DML type
+                jdbcTemplate.execute("USE base;");
+                jdbcTemplate.execute(insertQuery);
+            }
+
+            // You can store backoutQuery and selectQuery if needed
+        });
+    }
+}
