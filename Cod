@@ -1,0 +1,133 @@
+<script>
+    $(function() {
+        var dmlType = "base sysparm"; // Default DML type
+        var firstRowValues = {}; // To store the values of the first row
+        var environments = [
+            { Name: "Development", Id: "dev" },
+            { Name: "SIT", Id: "sit" },
+            { Name: "Production", Id: "prod" },
+            { Name: "UAT", Id: "uat" },
+            { Name: "Pre-Production", Id: "pre-prod" },
+            { Name: "Testing", Id: "test" },
+            { Name: "QA", Id: "qa" },
+            { Name: "Staging", Id: "stage" },
+            { Name: "Demo", Id: "demo" },
+            { Name: "Sandbox", Id: "sandbox" }
+        ];
+
+        // Define jsGrid instance
+        var grid = $("#jsGrid").jsGrid({
+            width: "100%",
+            height: "400px", // Set a fixed height to enable scrolling
+
+            inserting: true,
+            editing: true,
+            sorting: true,
+            paging: true,
+            autoload: true,
+
+            pageSize: 10,
+            pageButtonCount: 5,
+
+            deleteConfirm: "Do you really want to delete the record?",
+
+            data: [],
+
+            fields: [
+                { name: "groupRefId", type: "text", width: "10%", validate: "required" },
+                { name: "category", type: "text", width: "10%", validate: "required" },
+                { name: "key", type: "text", width: "10%", validate: "required" },
+                { name: "seqNum", type: "text", title: "Seq Num", width: "10%", validate: "required" },
+                { name: "dataValue", type: "text", title: "Data Value", width: "10%", validate: "required" },
+                { name: "environment", type: "select", items: environments, valueField: "Id", textField: "Name", width: "10%", validate: "required", visible: true },
+                { name: "description", type: "text", width: "10%", validate: "required" },
+                { type: "control" }
+            ],
+
+            onItemInserting: function(args) {
+                if (!firstRowValues.groupRefId && !firstRowValues.category && !firstRowValues.key) {
+                    firstRowValues.groupRefId = args.item.groupRefId;
+                    firstRowValues.category = args.item.category;
+                    firstRowValues.key = args.item.key;
+                    firstRowValues.seqNum = args.item.seqNum;
+                } else {
+                    args.item.groupRefId = firstRowValues.groupRefId;
+                    args.item.category = firstRowValues.category;
+                    args.item.key = firstRowValues.key;
+                    args.item.seqNum = firstRowValues.seqNum;
+                }
+            },
+
+            onItemEditing: function(args) {
+                if (args.itemIndex > 0 && dmlType !== "exception") {
+                    args.item.groupRefId = firstRowValues.groupRefId;
+                    args.item.category = firstRowValues.category;
+                    args.item.key = firstRowValues.key;
+                }
+            },
+
+            onDataLoaded: function(args) {
+                checkSubmitButtonVisibility(); // Check visibility of submit button after grid refresh
+            },
+
+            onRefreshed: function(args) {
+                checkSubmitButtonVisibility(); // Check visibility of submit button after grid refresh
+            }
+        });
+
+        // Event handler for DML Type change
+        $("#dmlType").change(function() {
+            dmlType = $(this).val();
+            resetJsGrid(); // Reset jsGrid on DML type change
+            $("#jsGrid").jsGrid("fieldOption", "environment", "visible", dmlType === "exception");
+            checkSubmitButtonVisibility(); // Check visibility of submit button
+        });
+
+        // Function to reset jsGrid
+        function resetJsGrid() {
+            grid.jsGrid("option", "data", []); // Clear data
+            grid.jsGrid("cancelEdit"); // Cancel any edits
+            grid.jsGrid("refresh"); // Refresh grid
+            firstRowValues = {}; // Clear stored first row values
+        }
+
+        function checkSubmitButtonVisibility() {
+            var data = grid.jsGrid("option", "data");
+            if (data.length > 0) {
+                $("#submitData").removeClass("hidden");
+            } else {
+                $("#submitData").addClass("hidden");
+            }
+        }
+
+        $("#submitData").click(function() {
+            var data = grid.jsGrid("option", "data");
+
+            // Validate all rows before submitting
+            for (var i = 0; i < data.length; i++) {
+                if (!data[i].seqNum || !data[i].dataValue || !data[i].description || (dmlType === "exception" && !data[i].environment)) {
+                    alert("All rows must have SEQ_NUM, DATA_VALUE, DESCRIPTION, and ENVIRONMENT (for exception) filled.");
+                    return;
+                }
+            }
+
+            var requestData = {
+                dmlType: dmlType,
+                data: data
+            };
+
+            $.ajax({
+                url: '${pageContext.request.contextPath}/saveData',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(requestData),
+                success: function(response) {
+                    alert(response);
+                },
+                error: function(error) {
+                    alert('Error: ' + error);
+                }
+            });
+        });
+    });
+</script>
